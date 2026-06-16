@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { submitAllTasks } from '@/services/imageGeneration';
 import type { DesignParams } from '@/types';
 
 const BUDGET_OPTIONS = [
@@ -17,16 +16,8 @@ const BUDGET_OPTIONS = [
 ];
 
 const STYLE_OPTIONS = [
-  'Modern',
-  'Luxury',
-  'Minimal',
-  'Villa',
-  'Classic',
-  'Industrial',
-  'Rustic',
-  'Mediterranean',
-  'Scandinavian',
-  'Contemporary',
+  'Modern', 'Luxury', 'Minimal', 'Villa', 'Classic',
+  'Industrial', 'Rustic', 'Mediterranean', 'Scandinavian', 'Contemporary',
 ];
 
 const PLOT_OPTIONS = [
@@ -37,17 +28,15 @@ const PLOT_OPTIONS = [
 ];
 
 const LOCATION_OPTIONS = [
-  'United Kingdom',
-  'United States',
-  'Australia',
-  'Canada',
-  'UAE',
-  'Germany',
-  'France',
-  'Spain',
-  'Italy',
-  'Netherlands',
+  'United Kingdom', 'United States', 'Australia', 'Canada',
+  'UAE', 'Germany', 'France', 'Spain', 'Italy', 'Netherlands',
 ];
+
+const STYLE_PREVIEWS: Record<string, string> = {
+  'Modern': '🏢', 'Luxury': '🏰', 'Minimal': '⬜', 'Villa': '🏡',
+  'Classic': '🏛️', 'Industrial': '🏗️', 'Rustic': '🪵',
+  'Mediterranean': '🌊', 'Scandinavian': '❄️', 'Contemporary': '✨',
+};
 
 interface LocationState {
   preset?: {
@@ -94,6 +83,7 @@ export default function DesignFormPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const { submitAllTasks } = await import('@/services/imageGeneration');
       const tasks = await submitAllTasks(params);
       navigate('/results', { state: { tasks, params } });
     } catch (err) {
@@ -104,25 +94,52 @@ export default function DesignFormPage() {
   };
 
   return (
-    <div className="min-h-0 px-4 md:px-8 py-8 md:py-12">
+    <div className="min-h-0 px-4 md:px-8 py-6 md:py-12">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-normal text-foreground mb-2 text-balance">
+
+        {/* Header */}
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-xl md:text-3xl font-normal text-foreground mb-1">
             Design Your Future Home
           </h1>
-          <p className="text-muted-foreground text-pretty">
-            Tell us about your vision and our AI will bring it to life with 7 stunning views.
+          <p className="text-sm text-muted-foreground">
+            Tell us about your vision and we'll find the perfect house photos.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-7">
+        <form onSubmit={handleSubmit} className="space-y-5 md:space-y-7">
+
+          {/* Style — visual picker */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-sm font-medium">
+              <Palette className="w-4 h-4 text-primary" /> House Style
+            </Label>
+            <div className="grid grid-cols-5 gap-2">
+              {STYLE_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => updateParam('style', s)}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ${
+                    params.style === s
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/40'
+                  }`}
+                >
+                  <span className="text-xl">{STYLE_PREVIEWS[s]}</span>
+                  <span className="text-[10px] font-medium text-center leading-tight text-foreground">{s}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Plot Size */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-medium">
               <Home className="w-4 h-4 text-primary" /> Plot Size
             </Label>
             <Select value={params.plot_size} onValueChange={(v) => updateParam('plot_size', v)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -136,92 +153,96 @@ export default function DesignFormPage() {
             <Label className="flex items-center gap-2 text-sm font-medium">
               <Banknote className="w-4 h-4 text-primary" /> Budget Range
             </Label>
-            <Select value={params.budget} onValueChange={(v) => updateParam('budget', v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {BUDGET_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Style */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <Palette className="w-4 h-4 text-primary" /> House Style
-            </Label>
-            <Select value={params.style} onValueChange={(v) => updateParam('style', v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STYLE_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Floors */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <Building2 className="w-4 h-4 text-primary" />
-              Number of Floors: <span className="text-primary font-semibold ml-1">{params.floors}</span>
-            </Label>
-            <Slider
-              value={[params.floors]}
-              onValueChange={([v]) => updateParam('floors', v)}
-              min={1} max={4} step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground px-0.5">
-              {[1, 2, 3, 4].map((n) => <span key={n}>{n}</span>)}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+              {BUDGET_OPTIONS.map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => updateParam('budget', b)}
+                  className={`py-2.5 px-2 rounded-xl border-2 text-xs font-medium transition-all ${
+                    params.budget === b
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:border-primary/40 text-muted-foreground'
+                  }`}
+                >
+                  {b}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Rooms */}
-          <div className="space-y-3">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <DoorOpen className="w-4 h-4 text-primary" />
-              Number of Rooms: <span className="text-primary font-semibold ml-1">{params.rooms}</span>
-            </Label>
-            <Slider
-              value={[params.rooms]}
-              onValueChange={([v]) => updateParam('rooms', v)}
-              min={2} max={12} step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground px-0.5">
-              {[2, 4, 6, 8, 10, 12].map((n) => <span key={n}>{n}</span>)}
+          {/* Floors + Rooms side by side on mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Floors */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Building2 className="w-4 h-4 text-primary" />
+                Floors: <span className="text-primary font-semibold ml-1">{params.floors}</span>
+              </Label>
+              <Slider
+                value={[params.floors]}
+                onValueChange={([v]) => updateParam('floors', v)}
+                min={1} max={4} step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                {[1, 2, 3, 4].map((n) => <span key={n}>{n}</span>)}
+              </div>
+            </div>
+
+            {/* Rooms */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <DoorOpen className="w-4 h-4 text-primary" />
+                Rooms: <span className="text-primary font-semibold ml-1">{params.rooms}</span>
+              </Label>
+              <Slider
+                value={[params.rooms]}
+                onValueChange={([v]) => updateParam('rooms', v)}
+                min={2} max={12} step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                {[2, 4, 6, 8, 10, 12].map((n) => <span key={n}>{n}</span>)}
+              </div>
             </div>
           </div>
 
-          {/* Location (optional) */}
+          {/* Location */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-medium">
               <MapPin className="w-4 h-4 text-primary" />
               Location <span className="text-muted-foreground font-normal text-xs ml-1">(optional)</span>
             </Label>
-            <Select value={params.location || ''} onValueChange={(v) => updateParam('location', v === 'any' ? '' : v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Any location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any location</SelectItem>
-                {LOCATION_OPTIONS.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+              {LOCATION_OPTIONS.map((loc) => (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => updateParam('location', params.location === loc ? '' : loc)}
+                  className={`py-2.5 px-2 rounded-xl border-2 text-xs font-medium transition-all ${
+                    params.location === loc
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:border-primary/40 text-muted-foreground'
+                  }`}
+                >
+                  {loc}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="pt-2">
-            <Button type="submit" size="lg" className="w-full gap-2 text-base" disabled={loading}>
+          {/* Submit */}
+          <div className="pt-2 sticky bottom-0 bg-background pb-4 md:pb-0 md:static">
+            <Button type="submit" size="lg" className="w-full gap-2 text-base h-12" disabled={loading}>
               {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
+                <><Loader2 className="w-4 h-4 animate-spin" /> Finding your perfect home...</>
               ) : (
                 <>Generate My Home Visualization <ArrowRight className="w-4 h-4" /></>
               )}
             </Button>
-            <p className="text-xs text-muted-foreground text-center mt-3">
-              Generates 7 images (exterior + interior). May take up to 10 minutes.
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Generates 7 views — exterior + interior rooms
             </p>
           </div>
         </form>

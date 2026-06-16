@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Download, Save, RefreshCw, Loader2, ImageOff, CheckCircle,
-  Home, ArrowLeft, Play, Share2, Sparkles, Zap, TrendingDown,
+  Home, ArrowLeft, Play, Share2, Sparkles, Zap, TrendingDown, ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -66,8 +66,7 @@ export default function ResultsPage() {
     if (!state) { navigate('/design'); return; }
     if (tasks.length > 0 && !pollingStarted.current) {
       pollingStarted.current = true;
-      pollAllTasks(tasks, setTasks).catch((err) => {
-        console.error('Polling error:', err);
+      pollAllTasks(tasks, setTasks).catch(() => {
         toast.error('Some generations failed. Please try again.');
       });
     }
@@ -91,8 +90,7 @@ export default function ResultsPage() {
       await saveDesign(buildDesignPayload());
       setSaved(true);
       toast.success('Design saved to your gallery!');
-    } catch (err) {
-      console.error('Save failed:', err);
+    } catch {
       toast.error('Failed to save design. Please try again.');
     } finally {
       setSaving(false);
@@ -120,12 +118,11 @@ export default function ResultsPage() {
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(window.location.href);
       toast.success('Link copied to clipboard!');
     } catch {
-      toast.info(`Share this link: ${url}`);
+      toast.info(`Share this link: ${window.location.href}`);
     }
   };
 
@@ -136,8 +133,7 @@ export default function ResultsPage() {
       modern: { style: 'Modern' },
       affordable: { budget: 'Under $200k', style: 'Minimal' },
     };
-    const newParams: DesignParams = { ...params, ...styleMap[modifier] };
-    navigate('/design', { state: { preset: newParams } });
+    navigate('/design', { state: { preset: { ...params, ...styleMap[modifier] } } });
   };
 
   const handleVirtualTour = () => {
@@ -153,54 +149,57 @@ export default function ResultsPage() {
   if (!state) return null;
 
   return (
-    <div className="min-h-0 px-4 md:px-8 py-8 md:py-12">
+    <div className="min-h-0 px-3 md:px-8 py-5 md:py-12">
       <div className="max-w-6xl mx-auto">
+
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-start gap-4 mb-8">
-          <Button variant="ghost" size="sm" className="gap-1 shrink-0 w-fit" onClick={() => navigate('/design')}>
+        <div className="flex flex-col gap-3 mb-5 md:mb-8">
+          <Button variant="ghost" size="sm" className="gap-1 w-fit -ml-2" onClick={() => navigate('/design')}>
             <ArrowLeft className="w-4 h-4" /> Back
           </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-normal text-foreground mb-1 text-balance">
-              Your Generated Design
-            </h1>
-            {params && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                <span className="flex items-center gap-1"><Home className="w-3.5 h-3.5" /> {params.style}</span>
-                <span>{params.plot_size}</span>
-                <span>{params.budget}</span>
-                <span>{params.floors} floors</span>
-                <span>{params.rooms} rooms</span>
-                {params.location && <span>{params.location}</span>}
+          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-3xl font-normal text-foreground mb-1">Your Generated Design</h1>
+              {params && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs md:text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1"><Home className="w-3 h-3" /> {params.style}</span>
+                  <span>{params.plot_size}</span>
+                  <span>{params.budget}</span>
+                  <span>{params.floors} floors</span>
+                  <span>{params.rooms} rooms</span>
+                  {params.location && <span>{params.location}</span>}
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            {isComplete && (
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs" onClick={handleShare}>
+                  <Share2 className="w-3.5 h-3.5" /> Share
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs" onClick={handleDownload} disabled={successCount === 0}>
+                  <Download className="w-3.5 h-3.5" /> Download
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs" onClick={handleSave} disabled={saving || saved}>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                  {saved ? 'Saved' : 'Save'}
+                </Button>
+                <Button size="sm" className="gap-1.5 h-9 text-xs" disabled={successCount === 0} onClick={handleVirtualTour}>
+                  <Play className="w-3.5 h-3.5" /> Virtual Tour
+                </Button>
               </div>
             )}
           </div>
-          {isComplete && (
-            <div className="flex items-center gap-2 shrink-0 flex-wrap">
-              <Button variant="outline" size="sm" className="gap-2 h-9" onClick={handleShare}>
-                <Share2 className="w-4 h-4" /> Share
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2 h-9" onClick={handleDownload} disabled={successCount === 0}>
-                <Download className="w-4 h-4" /> Download
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2 h-9" onClick={handleSave} disabled={saving || saved}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                {saved ? 'Saved' : 'Save'}
-              </Button>
-              <Button size="sm" className="gap-2 h-9" disabled={successCount === 0} onClick={handleVirtualTour}>
-                <Play className="w-4 h-4" /> Virtual Tour
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Progress */}
         {!isComplete && (
-          <div className="mb-8 p-4 rounded-xl bg-muted border border-border">
+          <div className="mb-6 p-4 rounded-xl bg-muted border border-border">
             <div className="flex items-center gap-3 mb-3">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary shrink-0" />
               <span className="text-sm font-medium text-foreground">
-                Generating images… {completedCount} / {tasks.length} complete
+                Loading images… {completedCount} / {tasks.length}
               </span>
             </div>
             <div className="w-full h-2 bg-muted-foreground/20 rounded-full overflow-hidden">
@@ -212,8 +211,8 @@ export default function ResultsPage() {
           </div>
         )}
 
-        {/* Grouped sections */}
-        <div className="space-y-10">
+        {/* Sections */}
+        <div className="space-y-6 md:space-y-10">
           {VIEW_SECTIONS.map((section) => {
             const sectionTasks = section.views
               .map((v) => tasks.find((t) => t.view === v))
@@ -223,18 +222,16 @@ export default function ResultsPage() {
             const colClass = sectionTasks.length === 1
               ? 'grid-cols-1 max-w-lg'
               : sectionTasks.length === 2
-              ? 'grid-cols-1 md:grid-cols-2'
-              : 'grid-cols-1 md:grid-cols-3';
+              ? 'grid-cols-2'
+              : 'grid-cols-1 sm:grid-cols-3';
 
             return (
               <div key={section.title}>
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-lg md:text-xl font-normal text-foreground text-balance">
-                    {section.title}
-                  </h2>
+                <div className="flex items-center gap-3 mb-3">
+                  <h2 className="text-base md:text-xl font-normal text-foreground">{section.title}</h2>
                   <div className="flex-1 h-px bg-border" />
                 </div>
-                <div className={`grid ${colClass} gap-4`}>
+                <div className={`grid ${colClass} gap-3`}>
                   {sectionTasks.map((task) => (
                     <ImageCard key={task.view} task={task} />
                   ))}
@@ -246,11 +243,11 @@ export default function ResultsPage() {
 
         {/* Bottom actions */}
         {isComplete && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 mt-8 border-t border-border">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 mt-6 border-t border-border">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2 h-9">
-                  <RefreshCw className="w-4 h-4" /> Regenerate Variation
+                <Button variant="outline" className="gap-2 h-9 w-full sm:w-auto">
+                  <RefreshCw className="w-4 h-4" /> Regenerate <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
@@ -261,12 +258,12 @@ export default function ResultsPage() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-2 h-9" onClick={() => navigate('/design')}>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" className="gap-2 h-9 flex-1 sm:flex-none" onClick={() => navigate('/design')}>
                 New Design
               </Button>
-              <Button className="gap-2 h-9" onClick={() => navigate('/gallery')}>
-                View Gallery <ArrowLeft className="w-4 h-4 rotate-180" />
+              <Button className="gap-2 h-9 flex-1 sm:flex-none" onClick={() => navigate('/gallery')}>
+                Gallery <ArrowLeft className="w-4 h-4 rotate-180" />
               </Button>
             </div>
           </div>
@@ -283,24 +280,23 @@ function ImageCard({ task }: { task: GenerationTask }) {
       <div className="aspect-[4/3] bg-muted relative flex-shrink-0">
         {task.status === 'pending' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Generating…</span>
+            <Loader2 className="w-7 h-7 animate-spin text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Loading…</span>
           </div>
         )}
         {task.status === 'failed' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
-            <ImageOff className="w-8 h-8 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">{task.error || 'Generation failed'}</span>
+            <ImageOff className="w-7 h-7 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">{task.error || 'Failed'}</span>
           </div>
         )}
         {task.status === 'success' && task.imageUrl && (
           <img src={task.imageUrl} alt={label} className="w-full h-full object-cover" loading="lazy" />
         )}
       </div>
-      <CardContent className="p-3">
-        <p className="text-sm font-medium text-foreground">{label}</p>
+      <CardContent className="p-2 md:p-3">
+        <p className="text-xs md:text-sm font-medium text-foreground">{label}</p>
       </CardContent>
     </Card>
   );
 }
-

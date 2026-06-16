@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, PenTool, Image, Grid3X3, Palette, Menu, LogOut, User, Layout } from 'lucide-react';
+import { Home, PenTool, Image, Grid3X3, Palette, Menu, LogOut, User, Layout, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import { toast } from 'sonner';
 
 const navItems = [
@@ -18,6 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isDark, toggle } = useDarkMode();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -26,10 +28,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     navigate('/auth');
   };
 
+  const DarkModeButton = () => (
+    <button
+      onClick={toggle}
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+    >
+      {isDark ? <Sun className="w-4 h-4 shrink-0" /> : <Moon className="w-4 h-4 shrink-0" />}
+      {isDark ? 'Light Mode' : 'Dark Mode'}
+    </button>
+  );
+
   const UserSection = () => (
-    <div className="px-3 py-3 border-t border-border">
+    <div className="px-3 py-3 border-t border-border space-y-1">
+      <DarkModeButton />
       {user ? (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <User className="w-4 h-4 text-primary" />
           </div>
@@ -50,7 +63,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       ) : (
         <Link to="/auth">
-          <Button variant="outline" size="sm" className="w-full gap-2">
+          <Button variant="outline" size="sm" className="w-full gap-2 mx-3" style={{ width: 'calc(100% - 24px)' }}>
             <User className="w-4 h-4" /> Sign In
           </Button>
         </Link>
@@ -139,11 +152,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <span className="text-base font-semibold text-foreground flex-1 min-w-0 truncate" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
             FutureHouse AI
           </span>
-          {user && (
-            <Button variant="ghost" size="icon" onClick={handleSignOut} className="shrink-0">
-              <LogOut className="w-4 h-4" />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={toggle} className="shrink-0">
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
-          )}
+            {user && (
+              <Button variant="ghost" size="icon" onClick={handleSignOut} className="shrink-0">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </header>
 
         <main className="flex-1 min-w-0">
