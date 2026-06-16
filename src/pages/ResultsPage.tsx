@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import { pollAllTasks } from '@/services/imageGeneration';
 import { saveDesign } from '@/lib/supabase';
+import CostEstimator from '@/components/CostEstimator';
 import type { Design, DesignParams, GenerationTask, GenerationView } from '@/types';
 
 const VIEW_LABELS: Record<GenerationView, string> = {
@@ -126,6 +127,96 @@ export default function ResultsPage() {
     }
   };
 
+  const handleShareCard = () => {
+    if (!params) return;
+    const previewUrl = tasks.find((t) => t.view === 'exterior_front' && t.imageUrl)?.imageUrl || '';
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 630;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Background
+    ctx.fillStyle = '#1a1410';
+    ctx.fillRect(0, 0, 1200, 630);
+
+    const drawCard = () => {
+      // Gradient overlay
+      const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+      gradient.addColorStop(0, 'rgba(90, 60, 40, 0.8)');
+      gradient.addColorStop(1, 'rgba(20, 15, 10, 0.9)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      // FutureHouse AI branding
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Georgia, serif';
+      ctx.fillText('FutureHouse AI', 60, 80);
+
+      // Line
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(60, 100);
+      ctx.lineTo(1140, 100);
+      ctx.stroke();
+
+      // Style tag
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath();
+      ctx.roundRect(60, 130, 140, 40, 20);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '18px system-ui';
+      ctx.fillText(params!.style, 80, 156);
+
+      // Main title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 64px Georgia, serif';
+      ctx.fillText('Dream Home', 60, 270);
+      ctx.font = 'bold 64px Georgia, serif';
+      ctx.fillStyle = 'rgba(200,160,100,1)';
+      ctx.fillText('Design', 60, 345);
+
+      // Details
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = '22px system-ui';
+      ctx.fillText(`${params!.floors} Floors  •  ${params!.rooms} Rooms  •  ${params!.budget}`, 60, 420);
+      if (params!.location) {
+        ctx.fillText(`📍 ${params!.location}`, 60, 460);
+      }
+
+      // Bottom bar
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(0, 560, 1200, 70);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '18px system-ui';
+      ctx.fillText('Generated with FutureHouse AI', 60, 603);
+      ctx.fillText(new Date().toLocaleDateString(), 1000, 603);
+
+      // Download
+      const link = document.createElement('a');
+      link.download = 'futurehouse-design.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.success('Share card downloaded!');
+    };
+
+    if (previewUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Draw house image on right side
+        ctx.drawImage(img, 600, 0, 600, 630);
+        drawCard();
+      };
+      img.onerror = drawCard;
+      img.src = previewUrl;
+    } else {
+      drawCard();
+    }
+  };
+
   const handleRegenerate = (modifier: string) => {
     if (!params) return;
     const styleMap: Record<string, Partial<DesignParams>> = {
@@ -178,6 +269,9 @@ export default function ResultsPage() {
                 <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs" onClick={handleShare}>
                   <Share2 className="w-3.5 h-3.5" /> Share
                 </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs" onClick={handleShareCard}>
+                  <Download className="w-3.5 h-3.5" /> Share Card
+                </Button>
                 <Button variant="outline" size="sm" className="gap-1.5 h-9 text-xs" onClick={handleDownload} disabled={successCount === 0}>
                   <Download className="w-3.5 h-3.5" /> Download
                 </Button>
@@ -208,6 +302,13 @@ export default function ResultsPage() {
                 style={{ width: `${tasks.length ? (completedCount / tasks.length) * 100 : 0}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Cost Estimator */}
+        {params && isComplete && (
+          <div className="mb-6 md:mb-8">
+            <CostEstimator params={params} />
           </div>
         )}
 
