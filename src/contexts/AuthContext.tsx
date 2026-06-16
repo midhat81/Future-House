@@ -1,92 +1,42 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-// @ts-ignore
-import { supabase } from '@/db/supabase';
-import type { User } from '@supabase/supabase-js';
-// @ts-ignore
-import type { Profile } from '@/types/types';
-import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import type { User, Session } from '@supabase/supabase-js';
 
-export async function getProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (error) {
-    console.error('获取用户信息失败:', error);
-    return null;
-  }
-  return data;
-}
 interface AuthContextType {
   user: User | null;
-  profile: Profile | null;
+  session: Session | null;
   loading: boolean;
-  signInWithUsername: (username: string, password: string) => Promise<{ error: Error | null }>;
-  signUpWithUsername: (username: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshProfile = async () => {
-    if (!user) {
-      setProfile(null);
-      return;
-    }
-
-    const profileData = await getProfile(user.id);
-    setProfile(profileData);
-  };
-
   useEffect(() => {
-    supabase
-      .auth
-      .getSession()
-      // @ts-ignore
-      .then(({ data: { session } }) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          getProfile(session.user.id).then(setProfile);
-        }
-      })
-      // @ts-ignore
-      .catch(error => {
-        toast.error(`获取用户信息失败: ${error.message}`);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-
-    // @ts-ignore
-    // In this function, do NOT use any await calls. Use `.then()` instead to avoid deadlocks.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        getProfile(session.user.id).then(setProfile);
-      } else {
-        setProfile(null);
-      }
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithUsername = async (username: string, password: string) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      const email = `${username}@miaoda.com`;
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       return { error: null };
     } catch (error) {
@@ -94,14 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUpWithUsername = async (username: string, password: string) => {
+  const signUp = async (email: string, password: string) => {
     try {
-      const email = `${username}@miaoda.com`;
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       return { error: null };
     } catch (error) {
@@ -112,11 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setProfile(null);
+    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithUsername, signUpWithUsername, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

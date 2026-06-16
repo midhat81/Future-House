@@ -1,19 +1,62 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, PenTool, Image, Grid3X3, Palette, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, PenTool, Image, Grid3X3, Palette, Menu, LogOut, User, Layout } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const navItems = [
   { name: 'Home', path: '/', icon: Home },
   { name: 'Create Design', path: '/design', icon: PenTool },
+  { name: 'Floor Plan', path: '/builder', icon: Layout },
   { name: 'Gallery', path: '/gallery', icon: Image },
   { name: 'Styles', path: '/styles', icon: Palette },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Signed out successfully');
+    navigate('/auth');
+  };
+
+  const UserSection = () => (
+    <div className="px-3 py-3 border-t border-border">
+      {user ? (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <User className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-sidebar-foreground truncate">
+              {user.email?.split('@')[0]}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0 text-muted-foreground hover:text-foreground w-8 h-8"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-4 h-4" />
+          </Button>
+        </div>
+      ) : (
+        <Link to="/auth">
+          <Button variant="outline" size="sm" className="w-full gap-2">
+            <User className="w-4 h-4" /> Sign In
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen w-full">
@@ -47,9 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="px-6 py-4 border-t border-border">
-          <p className="text-xs text-muted-foreground">AI-powered home visualization</p>
-        </div>
+        <UserSection />
       </aside>
 
       {/* Mobile Header */}
@@ -62,7 +103,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="sr-only">Open menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0 bg-sidebar">
+            <SheetContent side="left" className="w-64 p-0 bg-sidebar flex flex-col">
               <div className="flex items-center gap-3 px-6 h-14 border-b border-border">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   <Grid3X3 className="w-4 h-4 text-primary-foreground" />
@@ -92,11 +133,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   );
                 })}
               </nav>
+              <UserSection />
             </SheetContent>
           </Sheet>
           <span className="text-base font-semibold text-foreground flex-1 min-w-0 truncate" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
             FutureHouse AI
           </span>
+          {user && (
+            <Button variant="ghost" size="icon" onClick={handleSignOut} className="shrink-0">
+              <LogOut className="w-4 h-4" />
+            </Button>
+          )}
         </header>
 
         <main className="flex-1 min-w-0">
