@@ -48,14 +48,9 @@
 ### Installation
 
 ```bash
-# Clone the repo
 git clone https://github.com/midhat81/Future-House.git
 cd Future-House
-
-# Install dependencies
 npm install
-
-# Start dev server
 npx vite
 ```
 
@@ -63,7 +58,7 @@ npx vite
 
 Create a `.env` file in the root:
 
-```properties
+```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_CF_ACCOUNT_ID=your_cloudflare_account_id
@@ -105,3 +100,43 @@ create policy "Allow all" on designs for all using (true) with check (true);
 ---
 
 ## 📁 Project Structure
+
+```
+src/
+├── components/        # Reusable UI components
+│   ├── ui/           # shadcn/ui components
+│   ├── layouts/      # AppLayout, sidebar
+│   └── CostEstimator.tsx
+├── contexts/         # Auth context
+├── hooks/            # useDarkMode
+├── lib/              # Supabase client
+├── pages/            # All page components
+├── services/         # imageGeneration service
+└── types/            # TypeScript types
+```
+
+---
+
+## 🔮 Roadmap
+
+- [ ] AI-generated floor plans
+- [ ] 3D house preview
+- [ ] Neighborhood comparison
+- [ ] Mortgage calculator
+- [ ] Share to social media
+
+---
+
+## 👨‍💻 Built By
+
+**Muhammad Midhat** — Senior Full Stack Engineer
+
+- 🌐 [Portfolio](https://muhammad-midhat.vercel.app)
+- 💻 [GitHub](https://github.com/midhat81)
+- 🔗 [LinkedIn](https://www.linkedin.com/in/muhammadmidhat81)
+
+---
+
+## 📄 License
+
+MIT License — feel free to use this project as inspiration!
